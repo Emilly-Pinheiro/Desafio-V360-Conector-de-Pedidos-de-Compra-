@@ -1,0 +1,31 @@
+{
+  "name": "desafio-v360-conector-de-pedidos-de-compra-",
+  "version": "1.0.0",
+  "description": "Este repositório contém a solução desenvolvida para o desafio do processo seletivo da empresa V360.",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Emilly-Pinheiro/Desafio-V360-Conector-de-Pedidos-de-Compra-.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Emilly-Pinheiro/Desafio-V360-Conector-de-Pedidos-de-Compra-/issues"
+  },
+  "homepage": "https://github.com/Emilly-Pinheiro/Desafio-V360-Conector-de-Pedidos-de-Compra-#readme",
+  "dependencies": {
+    "dotenv": "^18.0.1",
+    "express": "^5.2.1",
+    "pg": "^8.23.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}
