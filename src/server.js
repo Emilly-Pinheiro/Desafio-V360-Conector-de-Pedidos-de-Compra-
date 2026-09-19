@@ -1,17 +1,16 @@
 require('dotenv').config();
 const app = require('./app');
-const { pool } = require('./config/database');
+const prisma = require('./config/prisma');
 
 const PORT = process.env.PORT || 3000;
 
 const startServer = async () => {
-  // Testa a conexão com o banco de dados PostgreSQL
+  // Testa a conexão com o banco de dados PostgreSQL via Prisma
   try {
-    const client = await pool.connect();
-    console.log(' Conexão com o banco de dados PostgreSQL estabelecida com sucesso!');
-    client.release();
+    await prisma.$connect();
+    console.log(' Conexão com o banco de dados PostgreSQL via Prisma estabelecida com sucesso!');
   } catch (err) {
-    console.warn(' Atenção: Não foi possível conectar ao PostgreSQL neste momento.');
+    console.warn(' Atenção: Não foi possível conectar ao PostgreSQL via Prisma neste momento.');
     console.warn(` Detalhes do erro: ${err.message}`);
     console.warn(' O servidor continuará em execução para rotas sem acesso ao banco.');
   }

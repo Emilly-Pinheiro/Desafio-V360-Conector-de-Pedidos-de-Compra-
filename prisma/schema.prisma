@@ -1,0 +1,56 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Order {
+  id            String           @id // Formato composto: "ALFA-4500001234"
+  clientOrigin  String           @map("client_origin") // 'ALFA', 'BETA', 'GAMA'
+  externalId    String           @map("external_order_id")
+  vendorTaxId   String           @map("vendor_tax_id")
+  vendorName    String           @map("vendor_name")
+  createdAt     DateTime         @map("created_at")
+  status        String           // 'OPEN', 'CLOSED', 'BLOCKED'
+  currency      String           @default("BRL")
+  items         OrderItem[]
+  logs          ConferenciaLog[]
+
+  @@unique([clientOrigin, externalId])
+  @@index([clientOrigin])
+  @@index([vendorTaxId])
+  @@index([status])
+  @@map("orders")
+}
+
+model OrderItem {
+  id               Int     @id @default(autoincrement())
+  orderId          String  @map("order_id")
+  order            Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  lineNumber       Int     @map("line_number")
+  materialCode     String  @map("material_code")
+  description      String
+  unitOfMeasure    String  @map("unit_of_measure")
+  quantityOrdered  Decimal @map("quantity_ordered") @db.Decimal(15, 4)
+  quantityReceived Decimal @default(0) @map("quantity_received") @db.Decimal(15, 4)
+  unitPrice        Decimal @map("unit_price") @db.Decimal(15, 4)
+
+  @@unique([orderId, lineNumber])
+  @@map("order_items")
+}
+
+model ConferenciaLog {
+  id               Int      @id @default(autoincrement())
+  orderId          String   @map("order_id")
+  order            Order    @relation(fields: [orderId], references: [id])
+  vendorTaxId      String   @map("vendor_tax_id")
+  invoiceNumber    String?  @map("invoice_number")
+  status           String   // 'APROVADA' ou 'REJEITADA'
+  divergenceReason String?  @map("divergence_reason") // 'QUANTITY_EXCEEDED', etc.
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  @@map("conferencias_log")
+}

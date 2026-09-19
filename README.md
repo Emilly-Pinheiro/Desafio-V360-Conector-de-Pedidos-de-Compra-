@@ -14,7 +14,7 @@ Dessa forma, quando novos clientes são integrados, as diferenças de formato s�
 
 ## Tecnologias e Ferramentas
 - **Linguagem / Framework**: JavaScript, Node.js, Express
-- **Banco de Dados**: PostgreSQL (`pg`)
+- **Banco de Dados & ORM**: PostgreSQL, Prisma ORM (`@prisma/client`)
 - **Configuração de Ambiente**: `dotenv`
 - **Desenvolvimento**: `nodemon`
 - **Testes de API**: Insomnia
@@ -26,18 +26,21 @@ Dessa forma, quando novos clientes são integrados, as diferenças de formato s�
 ## Estrutura do Projeto
 
 ```text
-├── .env.example              # Modelo de variáveis de ambiente
+├── .env.example              # Modelo de variáveis de ambiente (inclui DATABASE_URL)
 ├── .env                      # Arquivo de configuração local (ignorado pelo git)
 ├── .gitignore                # Arquivos e diretórios ignorados pelo Git
-├── package.json              # Dependências e scripts do projeto
+├── package.json              # Dependências e scripts do projeto (start, dev, prisma:*)
 ├── package-lock.json
 ├── README.md                 # Documentação principal
 ├── AI_USAGE.md               # Registro de uso de Inteligência Artificial
+├── prisma/
+│   └── schema.prisma         # Modelos e configuração do Prisma ORM
 └── src/
     ├── app.js                # Configuração do Express, middlewares e rotas
     ├── server.js             # Inicialização do servidor HTTP e teste de conexão
     └── config/
-        └── database.js       # Configuração e pool de conexões do PostgreSQL
+        ├── database.js       # Configuração e pool de conexões do PostgreSQL (pg)
+        └── prisma.js         # Instância e cliente do Prisma ORM
 ```
 
 ---
@@ -99,17 +102,27 @@ DB_NAME=desafio_v360
 ### 5. Testar os endpoints
 Com o servidor rodando, você pode validar o funcionamento acessando:
 - **Status da API**: `GET http://localhost:3000/`
-- **Health Check (conectividade com o banco)**: `GET http://localhost:3000/health`
+- **Health Check (conectividade com o banco via Prisma)**: `GET http://localhost:3000/health`
+
+### 6. Comandos úteis do Prisma ORM
+- **Gerar o Prisma Client**:
+  ```bash
+  npm run prisma:generate
+  ```
+- **Executar migrações pendentes no banco**:
+  ```bash
+  npm run prisma:migrate
+  ```
+- **Abrir a interface visual do Prisma Studio**:
+  ```bash
+  npm run prisma:studio
+  ```
 
 ---
 
 ## Decisões de arquitetura e regras de negócio
 
-- **Desacoplamento entre Aplicação e Servidor**: Separação entre `src/app.js` (configurações do Express, middlewares e rotas) e `src/server.js` (escuta na porta HTTP e inicialização), facilitando testes unitários e de integração sem prender a porta de rede.
-- **Gerenciamento de Conexões com `pg.Pool`**: Utilização de pool de conexões em `src/config/database.js`, permitindo reutilização eficiente das conexões com o PostgreSQL e suporte tanto a variáveis individuais quanto à string de conexão unificada (`DATABASE_URL`).
-- **Endpoint de Health Check**: Disponibilização da rota `/health` para monitoramento ativo do status da aplicação e verificação da conectividade com o banco de dados.
-
----
+Descrever aqui as principais decisões técnicas, padrões adotados e as regras de negócio implementadas.
 
 ## O que faria diferente com mais tempo
 

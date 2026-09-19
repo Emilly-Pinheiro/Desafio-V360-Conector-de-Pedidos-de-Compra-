@@ -6,6 +6,9 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:studio": "prisma studio",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -21,11 +24,13 @@
   },
   "homepage": "https://github.com/Emilly-Pinheiro/Desafio-V360-Conector-de-Pedidos-de-Compra-#readme",
   "dependencies": {
+    "@prisma/client": "^6.19.3",
     "dotenv": "^18.0.1",
     "express": "^5.2.1",
     "pg": "^8.23.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.14"
+    "nodemon": "^3.1.14",
+    "prisma": "^6.19.3"
   }
 }
