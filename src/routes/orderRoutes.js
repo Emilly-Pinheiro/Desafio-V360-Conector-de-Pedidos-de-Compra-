@@ -91,10 +91,14 @@ router.get('/', async (req, res) => {
     // Enriquece cada item com o cálculo de saldo pendente
     const formattedOrders = orders.map((order) => ({
       ...order,
-      items: order.items.map((item) => ({
-        ...item,
-        quantityPending: Math.max(0, Number(item.quantityOrdered) - Number(item.quantityReceived)),
-      })),
+      items: order.items.map((item) => {
+        const remaining = Math.max(0, Number(item.quantityOrdered) - Number(item.quantityReceived));
+        return {
+          ...item,
+          quantityPending: remaining,
+          remainingQuantity: remaining,
+        };
+      }),
     }));
 
     return res.status(200).json({
@@ -131,10 +135,14 @@ router.get('/:id', async (req, res) => {
 
     const formattedOrder = {
       ...order,
-      items: order.items.map((item) => ({
-        ...item,
-        quantityPending: Math.max(0, Number(item.quantityOrdered) - Number(item.quantityReceived)),
-      })),
+      items: order.items.map((item) => {
+        const remaining = Math.max(0, Number(item.quantityOrdered) - Number(item.quantityReceived));
+        return {
+          ...item,
+          quantityPending: remaining,
+          remainingQuantity: remaining,
+        };
+      }),
     };
 
     return res.status(200).json(formattedOrder);

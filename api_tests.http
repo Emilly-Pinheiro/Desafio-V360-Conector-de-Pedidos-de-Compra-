@@ -1,7 +1,6 @@
 ### Variáveis globais
 @baseUrl = http://localhost:3000/api
 
----
 
 ### 1. INGESTÃO: Cliente Alfa (JSON aninhado)
 # @name IngestaoAlfa
@@ -40,7 +39,6 @@ Content-Type: application/json
   ]
 }
 
----
 
 ### 2. INGESTÃO: Cliente Beta (Dois arquivos CSV: cabeçalho e itens)
 # @name IngestaoBeta
@@ -52,27 +50,100 @@ Content-Type: application/json
   "itens": "NUMERO_PEDIDO;ITEM;CODIGO_MATERIAL;DESCRICAO;UNIDADE;QTD_PEDIDA;QTD_RECEBIDA;PRECO_UNITARIO\n20260088412;1;MAT-77;Óleo de soja 900ml;UN;1.200,000;400,000;6,49\n20260088412;2;MAT-78;Açúcar refinado 1kg;UN;500,000;0,000;4,15\n20260088413;1;MAT-91;Carne bovina dianteiro kg;KG;2.000,000;0,000;27,90"
 }
 
----
 
 ### 3. CONSULTA: Listar todos os pedidos (Modelo Único)
 GET {{baseUrl}}/orders
 
----
 
 ### 4. CONSULTA: Filtrar por cliente de origem (BETA)
 GET {{baseUrl}}/orders?clientOrigin=BETA
 
----
 
 ### 5. CONSULTA: Filtrar apenas pedidos com saldo pendente
 GET {{baseUrl}}/orders?pending_balance=true
 
----
 
 ### 6. CONSULTA: Detalhes de um pedido específico de Alfa
 GET {{baseUrl}}/orders/ALFA-4500001234
 
----
 
 ### 7. CONSULTA: Detalhes de um pedido específico de Beta
 GET {{baseUrl}}/orders/BETA-20260088412
+
+
+### 8. CONFERÊNCIA: Nota Fiscal Conforme (APROVADA)
+# Saldo disponível de MAT-1001 é 40 (100 - 60). Nota cobra 10 un a R$ 45.90 = R$ 459.00
+POST {{baseUrl}}/invoice/validate
+Content-Type: application/json
+
+{
+  "orderId": "ALFA-4500001234",
+  "invoiceNumber": "NF-00100",
+  "vendorTaxId": "23.456.789/0001-01",
+  "items": [
+    {
+      "materialCode": "MAT-1001",
+      "quantity": 10,
+      "totalValue": 459.00
+    }
+  ]
+}
+
+### 9. CONFERÊNCIA: Nota Fiscal com Saldo Excedido (REJEITADA - QUANTITY_EXCEEDED)
+# Saldo disponível é 40, nota tenta faturar 50 unidades
+POST {{baseUrl}}/invoice/validate
+Content-Type: application/json
+
+{
+  "orderId": "ALFA-4500001234",
+  "invoiceNumber": "NF-00101",
+  "vendorTaxId": "23456789000101",
+  "items": [
+    {
+      "materialCode": "MAT-1001",
+      "quantity": 50,
+      "totalValue": 2295.00
+    }
+  ]
+}
+
+
+### 10. CONFERÊNCIA: Nota Fiscal com Divergência de Preço além de R$ 0,05 (REJEITADA - PRICE_DIVERGENCE)
+# 10 un de MAT-1001 deveriam custar R$ 459.00, nota cobra R$ 500.00
+POST {{baseUrl}}/invoice/validate
+Content-Type: application/json
+
+{
+  "orderId": "ALFA-4500001234",
+  "invoiceNumber": "NF-00102",
+  "vendorTaxId": "23456789000101",
+  "items": [
+    {
+      "materialCode": "MAT-1001",
+      "quantity": 10,
+      "totalValue": 500.00
+    }
+  ]
+}
+
+
+### 11. CONFERÊNCIA: Nota Fiscal para Pedido Bloqueado (REJEITADA - ORDER_BLOCKED)
+POST {{baseUrl}}/invoice/validate
+Content-Type: application/json
+
+{
+  "orderId": "BETA-20260088413",
+  "invoiceNumber": "NF-00200",
+  "vendorTaxId": "98765432000155",
+  "items": [
+    {
+      "materialCode": "MAT-91",
+      "quantity": 100,
+      "totalValue": 2790.00
+    }
+  ]
+}
+
+
+### 12. RELATÓRIO: Listar logs de conferências realizadas
+GET {{baseUrl}}/invoice/logs

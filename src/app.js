@@ -38,4 +38,8 @@ app.get('/health', async (req, res) => {
 const orderRoutes = require('./routes/orderRoutes');
 app.use('/api/orders', orderRoutes);
 
+// Rotas de Conferência de Notas Fiscais
+const invoiceRoutes = require('./routes/invoiceRoutes');
+app.use('/api/invoice', invoiceRoutes);
+
 module.exports = app;
