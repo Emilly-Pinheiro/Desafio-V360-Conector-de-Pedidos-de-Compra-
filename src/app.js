@@ -34,4 +34,8 @@ app.get('/health', async (req, res) => {
   }
 });
 
+// Rotas de Pedidos e Ingestão
+const orderRoutes = require('./routes/orderRoutes');
+app.use('/api/orders', orderRoutes);
+
 module.exports = app;
