@@ -46,7 +46,39 @@ Para suportar clientes heterogêneos sem violar o princípio *Open/Closed* (SOLI
 - **`BaseAdapter`**: Classe abstrata que define o ciclo de vida da ingestão (`validate`, `normalize`, `persist`) e implementa a persistência idempotente via Prisma ORM.
 - **`AlfaAdapter`**: Responsável pelo cliente **Alfa Energia** (formato JSON aninhado, campos em inglês, status em minúsculo).
 - **`BetaAdapter`**: Responsável pelo cliente **Beta Alimentos** (dois arquivos CSV em padrão brasileiro com delimitador `;`, números com vírgula decimal, datas `DD/MM/AAAA` e CNPJ com máscara).
-- **`AdapterFactory` (`getAdapter`)**: Registrador dinâmico que instancia o adaptador correto com base no identificador da rota (`alfa`, `beta`, etc.).
+- **`GamaAdapter`**: Responsável pelo cliente **Gama Logística** (formato JSON achatado/flat por item, conversão de timestamps Unix em segundos, centavos para decimais em Reais, aplicação do `fator_conv` de caixas para unidades e mapeamento de situação numérica 1, 2, 3).
+- **`AdapterFactory` (`getAdapter`)**: Registrador dinâmico que instancia o adaptador correto com base no identificador da rota (`alfa`, `beta`, `gama`).
+
+```mermaid
+flowchart TD
+    subgraph Fontes["Formatos de Origem dos Clientes"]
+        Alfa["<b>Cliente Alfa Energia (JSON)</b><br>• JSON aninhado (purchase_orders + items)<br>• Status: open, closed, blocked"]
+        Beta["<b>Cliente Beta Alimentos (CSV)</b><br>• 2 CSVs separados por ';'<br>• cabecalho.csv + itens.csv<br>• Padrão Pt-BR: '1.200,00' e 'DD/MM/AAAA'<br>• Status: EM ABERTO, BLOQUEADO"]
+        Gama["<b>Cliente Gama Logística (JSON Flat)</b><br>• 1 linha por item com 'ped' repetido<br>• Timestamp Unix em segundos (dt_criacao)<br>• Valores em centavos (preco_unit_centavos)<br>• Fator conversão caixas -> unidades (fator_conv)<br>• Status numérico: 1, 2, 3"]
+    end
+
+    subgraph Adaptadores["Camada de Integração (Strategy Pattern)"]
+        A_Alfa["AlfaAdapter"]
+        A_Beta["BetaAdapter"]
+        A_Gama["GamaAdapter"]
+    end
+
+    subgraph ModeloUnico["Modelo Único Padronizado (PostgreSQL)"]
+        OrderT["<b>Order (Cabeçalho)</b><br>• id: 'GAMA-GL-778'<br>• status: 'OPEN' | 'CLOSED' | 'BLOCKED'"]
+        ItemT["<b>OrderItem (Itens Canônicos em UN)</b><br>• unitOfMeasure: 'UN'<br>• quantity: qtd_ped * fator_conv<br>• unitPrice: (centavos / 100) / fator_conv"]
+    end
+
+    Alfa --> A_Alfa
+    Beta --> A_Beta
+    Gama --> A_Gama
+
+    A_Alfa --> OrderT
+    A_Alfa --> ItemT
+    A_Beta --> OrderT
+    A_Beta --> ItemT
+    A_Gama --> OrderT
+    A_Gama --> ItemT
+```
 
 ### 2. Segurança: Ingestão 100% em Memória
 Para evitar vulnerabilidades críticas de **Local File Inclusion (LFI)** e **Path Traversal**, a API não recebe nem manipula caminhos de arquivos do sistema de arquivos do servidor. Todo conteúdo (JSON estruturado ou strings CSV) é recebido diretamente no *body* das requisições HTTP REST e processado em memória.
@@ -61,44 +93,61 @@ Para endpoints analíticos (`/api/reports`), as agregações (volumetria e ranki
 
 ## Modelo Único de Dados
 
-O modelo relacional unificado foi modelado no PostgreSQL através do Prisma ORM (`prisma/schema.prisma`):
+O modelo relacional unificado foi modelado no PostgreSQL através do Prisma ORM (`prisma/schema.prisma`), incorporando a estrutura normalizada proveniente de Alfa, Beta e Gama:
 
 ```mermaid
 erDiagram
+    GamaFlatItem }o--|| Order : "agrupado por ped em"
     Order ||--o{ OrderItem : contains
     Order ||--o{ ConferenciaLog : audits
 
+    GamaFlatItem {
+        string ped "Numero do Pedido (ex: GL-778)"
+        int item "Linha do Item (1, 2...)"
+        string cnpj_fornecedor "CNPJ do Fornecedor"
+        string nome_fornecedor "Razao Social"
+        int dt_criacao "Timestamp Unix em segundos (1786752000)"
+        int situacao "1 aberto, 2 encerrado, 3 bloqueado"
+        string cod_mat "Codigo do Material (TRP-01)"
+        string desc_mat "Descricao (Pallet de madeira)"
+        string um "Unidade de Compra (CX)"
+        int fator_conv "Fator de conversao CX para UN (12)"
+        int qtd_ped "Quantidade pedida em caixas (10)"
+        int qtd_rec "Quantidade recebida em caixas (2)"
+        int preco_unit_centavos "Preco da embalagem em centavos (120000)"
+    }
+
     Order {
-        string id PK "ALFA-4500001234"
-        string clientOrigin "ALFA | BETA | GAMA"
-        string externalId "4500001234"
-        string vendorTaxId "23456789000101 (somente dígitos)"
-        string vendorName "Razão Social"
-        datetime createdAt "Data de emissão ISO"
-        string status "OPEN | CLOSED | BLOCKED"
+        string id PK "GAMA-GL-778 | ALFA-4500001234 | BETA-20260088412"
+        string clientOrigin "GAMA | ALFA | BETA"
+        string externalId "GL-778 (origem ped)"
+        string vendorTaxId "34567890000112 (somente digitos)"
+        string vendorName "Transportes Ideal ME"
+        datetime createdAt "Data ISO convertida de dt_criacao"
+        string status "OPEN (1) | CLOSED (2) | BLOCKED (3)"
         string currency "BRL"
     }
 
     OrderItem {
         int id PK "autoincrement"
-        string orderId FK
-        int lineNumber "10, 20..."
-        string materialCode "MAT-1001"
-        string description "Descrição do material"
-        string unitOfMeasure "UN, KG, CX"
-        decimal quantityOrdered "15, 4"
-        decimal quantityReceived "15, 4"
-        decimal unitPrice "15, 4"
+        string orderId FK "GAMA-GL-778"
+        int lineNumber "1, 2... (origem item)"
+        string materialCode "TRP-01 (origem cod_mat)"
+        string description "Pallet de madeira (origem desc_mat)"
+        string unitOfMeasure "UN (convertido de CX via fator_conv)"
+        decimal quantityOrdered "120 (qtd_ped * fator_conv)"
+        decimal quantityReceived "24 (qtd_rec * fator_conv)"
+        decimal unitPrice "100.00 ((preco_centavos/100)/fator_conv)"
     }
 
     ConferenciaLog {
         int id PK "autoincrement"
-        string orderId FK
-        string vendorTaxId "CNPJ conferido"
-        string invoiceNumber "NF-00100"
+        string orderId FK "GAMA-GL-778"
+        string vendorTaxId "34567890000112"
+        string invoiceNumber "NF-GAMA-01"
         string status "APROVADA | REJEITADA"
-        string divergenceReason "QUANTITY_EXCEEDED, PRICE_DIVERGENCE..."
-        datetime createdAt "Timestamp da conferência"
+        string divergenceReason "ORDER_CLOSED, PRICE_DIVERGENCE..."
+        datetime createdAt "Timestamp da conferencia"
     }
 ```
 
@@ -144,6 +193,43 @@ Recebe o conteúdo dos dois arquivos CSV enviados como strings no corpo da requi
   "cabecalho": "NUMERO_PEDIDO;FORNECEDOR_CNPJ;FORNECEDOR_RAZAO_SOCIAL;EMISSAO;SITUACAO;MOEDA\n20260088412;12.345.678/0001-90;Distribuidora Horizonte Ltda;15/08/2026;EM ABERTO;BRL",
   "itens": "NUMERO_PEDIDO;ITEM;CODIGO_MATERIAL;DESCRICAO;UNIDADE;QTD_PEDIDA;QTD_RECEBIDA;PRECO_UNITARIO\n20260088412;1;MAT-77;Óleo de soja 900ml;UN;1.200,000;400,000;6,49"
 }
+```
+
+#### Cliente Gama Logística (`POST /api/orders/ingest/gama`)
+Recebe o JSON de estrutura achatada (*flat*), com uma linha por item de pedido:
+```json
+[
+  {
+    "ped": "GL-778",
+    "item": 1,
+    "cnpj_fornecedor": "34567890000112",
+    "nome_fornecedor": "Transportes Ideal ME",
+    "dt_criacao": 1786752000,
+    "cod_mat": "TRP-01",
+    "desc_mat": "Pallet de madeira",
+    "um": "CX",
+    "fator_conv": 12,
+    "qtd_ped": 10,
+    "qtd_rec": 2,
+    "preco_unit_centavos": 120000,
+    "situacao": 1
+  },
+  {
+    "ped": "GL-778",
+    "item": 2,
+    "cnpj_fornecedor": "34567890000112",
+    "nome_fornecedor": "Transportes Ideal ME",
+    "dt_criacao": 1786752000,
+    "cod_mat": "TRP-09",
+    "desc_mat": "Caixa organizadora",
+    "um": "CX",
+    "fator_conv": 3,
+    "qtd_ped": 4,
+    "qtd_rec": 0,
+    "preco_unit_centavos": 10000,
+    "situacao": 1
+  }
+]
 ```
 
 ---
@@ -455,15 +541,15 @@ O arquivo [`api_tests.http`](file:///c:/Users/emill/OneDrive/Documents/Desafio-V
 ## Parte 2 — Mudanças Exigidas pelo Cliente Gama
 
 ### O que foi SÓ ADICIONAR (Extensão):
-1. **Nova classe `GamaAdapter` ([`src/adapters/GamaAdapter.js`](file:///c:/Users/emill/OneDrive/Documents/Desafio-V360-Conector-de-Pedidos-de-Compra-/src/adapters/GamaAdapter.js)):**
+1. **Nova classe `GamaAdapter`**
    - Herdando da abstração `BaseAdapter`.
    - **Agrupamento relacional em memória:** Agrupa as linhas soltas pela chave `"ped"`, construindo o cabeçalho e aninhando os itens de forma idempotente.
    - **Tratamento de Dados na Ingestão:** Converte timestamps Unix para objeto `Date`, centavos para decimais em Reais, e normaliza a situação numérica para o vocabulário canônico (`OPEN`, `CLOSED`, `BLOCKED`).
    - **Aplicação do `fator_conv` na borda:** Transforma quantidades em caixas para unidades canônicas ($\text{quantidade} \times \text{fator\_conv}$) e decompõe o preço unitário por unidade ($\frac{\text{preço da caixa}}{\text{fator\_conv}}$). Dessa forma, a base de dados armazena os dados já prontos para a conciliação.
-2. **Novos cenários de teste:** Adicionadas requisições de ingestão e conferência de notas fiscais do Gama em [`api_tests.http`](file:///c:/Users/emill/OneDrive/Documents/Desafio-V360-Conector-de-Pedidos-de-Compra-/api_tests.http).
+2. **Novos cenários de teste:** Adicionadas requisições de ingestão e conferência de notas fiscais do Gama em [`api_tests.http`]
 
 ### O que EXIGIU MEXER no que já existia:
-1. **Registro no Factory ([`src/adapters/index.js`](file:///c:/Users/emill/OneDrive/Documents/Desafio-V360-Conector-de-Pedidos-de-Compra-/src/adapters/index.js)):**
+1. **Registro no Factory**
    - Apenas a inclusão de `GAMA: GamaAdapter` no mapa de estratégias (`AdapterFactory.#adapters`).
 
 ### O que NÃO PRECISOU SER ALTERADO (Open-Closed Principle):
