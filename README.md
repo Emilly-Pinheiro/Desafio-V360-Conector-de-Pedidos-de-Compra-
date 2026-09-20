@@ -454,4 +454,19 @@ O arquivo [`api_tests.http`](file:///c:/Users/emill/OneDrive/Documents/Desafio-V
 
 ## Parte 2 — Mudanças Exigidas pelo Cliente Gama
 
-*(Esta seção será atualizada com as particularidades de integração do Cliente Gama Logística: estrutura achatada linha a linha, conversão de timestamps Unix em segundos, valores em centavos, status numéricos e fator de conversão de caixas para unidades).*
+### O que foi SÓ ADICIONAR (Extensão):
+1. **Nova classe `GamaAdapter` ([`src/adapters/GamaAdapter.js`](file:///c:/Users/emill/OneDrive/Documents/Desafio-V360-Conector-de-Pedidos-de-Compra-/src/adapters/GamaAdapter.js)):**
+   - Herdando da abstração `BaseAdapter`.
+   - **Agrupamento relacional em memória:** Agrupa as linhas soltas pela chave `"ped"`, construindo o cabeçalho e aninhando os itens de forma idempotente.
+   - **Tratamento de Dados na Ingestão:** Converte timestamps Unix para objeto `Date`, centavos para decimais em Reais, e normaliza a situação numérica para o vocabulário canônico (`OPEN`, `CLOSED`, `BLOCKED`).
+   - **Aplicação do `fator_conv` na borda:** Transforma quantidades em caixas para unidades canônicas ($\text{quantidade} \times \text{fator\_conv}$) e decompõe o preço unitário por unidade ($\frac{\text{preço da caixa}}{\text{fator\_conv}}$). Dessa forma, a base de dados armazena os dados já prontos para a conciliação.
+2. **Novos cenários de teste:** Adicionadas requisições de ingestão e conferência de notas fiscais do Gama em [`api_tests.http`](file:///c:/Users/emill/OneDrive/Documents/Desafio-V360-Conector-de-Pedidos-de-Compra-/api_tests.http).
+
+### O que EXIGIU MEXER no que já existia:
+1. **Registro no Factory ([`src/adapters/index.js`](file:///c:/Users/emill/OneDrive/Documents/Desafio-V360-Conector-de-Pedidos-de-Compra-/src/adapters/index.js)):**
+   - Apenas a inclusão de `GAMA: GamaAdapter` no mapa de estratégias (`AdapterFactory.#adapters`).
+
+### O que NÃO PRECISOU SER ALTERADO (Open-Closed Principle):
+- **Motor de Validação de Notas Fiscais (`invoiceService.js`):** **Zero linhas alteradas.** Como a normalização converte as caixas em unidades canônicas na ingestão, o motor de conferência valida pedidos do Gama com as mesmas regras universais (saldo, preço e bloqueio).
+- **Controladores e Rotas (`orderRoutes.js`):** Nenhuma alteração; a rota `POST /api/orders/ingest/:client` delegou imediatamente para o novo adapter.
+- **Adaptadores Existentes (`AlfaAdapter` e `BetaAdapter`):** Zero regressões; continuam operando normalmente de forma totalmente desacoplada.

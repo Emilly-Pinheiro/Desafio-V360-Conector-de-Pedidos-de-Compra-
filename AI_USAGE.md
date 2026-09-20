@@ -2,9 +2,9 @@
 
 ## Ferramentas utilizadas
 
-- Agente IA do Antigravity IDE: Utilizado primariamente para a geração do código-fonte, estruturação do projeto (Scaffolding) e implementação de rotas e serviços.
+- Agente IA do Antigravity IDE (Gemini 3.8 Flash): Utilizado primariamente para a geração do código-fonte, estruturação do projeto (Scaffolding) e implementação de rotas e serviços.
 
-- LLMs Assistentes (Gemini): Utilizado como parceiro de raciocínio (thought partner) para planeamento da arquitetura, debates sobre vulnerabilidades de segurança, modelação relacional no Prisma e revisão de regras de negócio.
+- LLMs Assistentes (Gemini 3.1 Pro): Utilizado como parceiro de raciocínio (thought partner) para planeamento da arquitetura, debates sobre vulnerabilidades de segurança, modelação relacional no Prisma e revisão de regras de negócio.
 
 ## Exemplo de prompt que funcionou
 

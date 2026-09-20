@@ -51,27 +51,81 @@ Content-Type: application/json
 }
 
 
-### 3. CONSULTA: Listar todos os pedidos (Modelo Único)
+### 3. INGESTÃO: Cliente Gama (JSON flat com fator_conv, centavos e timestamps)
+# @name IngestaoGama
+POST {{baseUrl}}/orders/ingest/gama
+Content-Type: application/json
+
+[
+  {
+    "ped": "GL-778",
+    "item": 1,
+    "cnpj_fornecedor": "34567890000112",
+    "nome_fornecedor": "Transportes Ideal ME",
+    "dt_criacao": 1786752000,
+    "cod_mat": "TRP-01",
+    "desc_mat": "Pallet de madeira",
+    "um": "CX",
+    "fator_conv": 12,
+    "qtd_ped": 10,
+    "qtd_rec": 2,
+    "preco_unit_centavos": 120000,
+    "situacao": 1
+  },
+  {
+    "ped": "GL-778",
+    "item": 2,
+    "cnpj_fornecedor": "34567890000112",
+    "nome_fornecedor": "Transportes Ideal ME",
+    "dt_criacao": 1786752000,
+    "cod_mat": "TRP-09",
+    "desc_mat": "Caixa organizadora",
+    "um": "CX",
+    "fator_conv": 3,
+    "qtd_ped": 4,
+    "qtd_rec": 0,
+    "preco_unit_centavos": 10000,
+    "situacao": 1
+  },
+  {
+    "ped": "GL-779",
+    "item": 1,
+    "cnpj_fornecedor": "56789012000134",
+    "nome_fornecedor": "Armazéns Rio Claro Ltda",
+    "dt_criacao": 1784160000,
+    "cod_mat": "ARM-10",
+    "desc_mat": "Estrado metálico",
+    "um": "UN",
+    "fator_conv": 1,
+    "qtd_ped": 100,
+    "qtd_rec": 100,
+    "preco_unit_centavos": 3500,
+    "situacao": 2
+  }
+]
+
+
+### 4. CONSULTA: Listar todos os pedidos (Modelo Único)
 GET {{baseUrl}}/orders
 
 
-### 4. CONSULTA: Filtrar por cliente de origem (BETA)
-GET {{baseUrl}}/orders?clientOrigin=BETA
+### 5. CONSULTA: Filtrar por cliente de origem (GAMA)
+GET {{baseUrl}}/orders?clientOrigin=GAMA
 
 
-### 5. CONSULTA: Filtrar apenas pedidos com saldo pendente
+### 6. CONSULTA: Filtrar apenas pedidos com saldo pendente
 GET {{baseUrl}}/orders?pending_balance=true
 
 
-### 6. CONSULTA: Detalhes de um pedido específico de Alfa
+### 7. CONSULTA: Detalhes de um pedido específico de Alfa
 GET {{baseUrl}}/orders/ALFA-4500001234
 
 
-### 7. CONSULTA: Detalhes de um pedido específico de Beta
+### 8. CONSULTA: Detalhes de um pedido específico de Beta
 GET {{baseUrl}}/orders/BETA-20260088412
 
 
-### 8. CONFERÊNCIA: Nota Fiscal Conforme (APROVADA)
+### 9. CONFERÊNCIA: Nota Fiscal Conforme (APROVADA)
 # Saldo disponível de MAT-1001 é 40 (100 - 60). Nota cobra 10 un a R$ 45.90 = R$ 459.00
 POST {{baseUrl}}/invoice/validate
 Content-Type: application/json
@@ -89,7 +143,7 @@ Content-Type: application/json
   ]
 }
 
-### 9. CONFERÊNCIA: Nota Fiscal com Saldo Excedido (REJEITADA - QUANTITY_EXCEEDED)
+### 10. CONFERÊNCIA: Nota Fiscal com Saldo Excedido (REJEITADA - QUANTITY_EXCEEDED)
 # Saldo disponível é 40, nota tenta faturar 50 unidades
 POST {{baseUrl}}/invoice/validate
 Content-Type: application/json
@@ -108,7 +162,7 @@ Content-Type: application/json
 }
 
 
-### 10. CONFERÊNCIA: Nota Fiscal com Divergência de Preço além de R$ 0,05 (REJEITADA - PRICE_DIVERGENCE)
+### 11. CONFERÊNCIA: Nota Fiscal com Divergência de Preço além de R$ 0,05 (REJEITADA - PRICE_DIVERGENCE)
 # 10 un de MAT-1001 deveriam custar R$ 459.00, nota cobra R$ 500.00
 POST {{baseUrl}}/invoice/validate
 Content-Type: application/json
@@ -127,7 +181,7 @@ Content-Type: application/json
 }
 
 
-### 11. CONFERÊNCIA: Nota Fiscal para Pedido Bloqueado (REJEITADA - ORDER_BLOCKED)
+### 12. CONFERÊNCIA: Nota Fiscal para Pedido Bloqueado (REJEITADA - ORDER_BLOCKED)
 POST {{baseUrl}}/invoice/validate
 Content-Type: application/json
 
@@ -145,9 +199,45 @@ Content-Type: application/json
 }
 
 
-### 12. RELATÓRIO: Listar logs de conferências realizadas
+### 13. CONFERÊNCIA: Cliente Gama Conforme (APROVADA - GL-778 cobra 10 un de TRP-01 a R$ 100,00)
+# Saldo disponível é 96 un (120 - 24). Nota fiscal cobra 10 un a R$ 100.00 = R$ 1.000,00
+POST {{baseUrl}}/invoice/validate
+Content-Type: application/json
+
+{
+  "orderId": "GAMA-GL-778",
+  "invoiceNumber": "NF-GAMA-01",
+  "vendorTaxId": "34567890000112",
+  "items": [
+    {
+      "materialCode": "TRP-01",
+      "quantity": 10,
+      "totalValue": 1000.00
+    }
+  ]
+}
+
+
+### 14. CONFERÊNCIA: Cliente Gama Pedido Encerrado (REJEITADA - ORDER_CLOSED)
+POST {{baseUrl}}/invoice/validate
+Content-Type: application/json
+
+{
+  "orderId": "GAMA-GL-779",
+  "invoiceNumber": "NF-GAMA-02",
+  "vendorTaxId": "56789012000134",
+  "items": [
+    {
+      "materialCode": "ARM-10",
+      "quantity": 10,
+      "totalValue": 350.00
+    }
+  ]
+}
+
+
+### 15. RELATÓRIO: Listar logs de conferências realizadas
 GET {{baseUrl}}/invoice/logs
 
-
-### 13. DASHBOARD & ESTATÍSTICAS: Relatório de volumetria e ranking de divergências (com groupBy)
+### 16. DASHBOARD & ESTATÍSTICAS: Relatório de volumetria e ranking de divergências (com groupBy)
 GET {{baseUrl}}/reports

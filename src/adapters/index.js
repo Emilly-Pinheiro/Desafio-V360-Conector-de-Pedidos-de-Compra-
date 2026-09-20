@@ -1,6 +1,7 @@
 const BaseAdapter = require('./BaseAdapter');
 const AlfaAdapter = require('./AlfaAdapter');
 const BetaAdapter = require('./BetaAdapter');
+const GamaAdapter = require('./GamaAdapter');
 
 /**
  * Registro de Adaptadores (Strategy Factory)
@@ -10,6 +11,7 @@ class AdapterFactory {
   static #adapters = {
     ALFA: AlfaAdapter,
     BETA: BetaAdapter,
+    GAMA: GamaAdapter,
   };
 
   /**
@@ -46,6 +48,7 @@ module.exports = {
   BaseAdapter,
   AlfaAdapter,
   BetaAdapter,
+  GamaAdapter,
   AdapterFactory,
   getAdapter: (clientOrigin) => AdapterFactory.getAdapter(clientOrigin),
 };
