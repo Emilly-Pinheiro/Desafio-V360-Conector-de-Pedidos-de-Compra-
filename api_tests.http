@@ -3,7 +3,7 @@
 
 ---
 
-### 1. INGESTÃO: Cliente Alfa
+### 1. INGESTÃO: Cliente Alfa (JSON aninhado)
 # @name IngestaoAlfa
 POST {{baseUrl}}/orders/ingest/alfa
 Content-Type: application/json
@@ -42,15 +42,37 @@ Content-Type: application/json
 
 ---
 
-### 2. CONSULTA: Listar todos os pedidos
+### 2. INGESTÃO: Cliente Beta (Dois arquivos CSV: cabeçalho e itens)
+# @name IngestaoBeta
+POST {{baseUrl}}/orders/ingest/beta
+Content-Type: application/json
+
+{
+  "cabecalho": "NUMERO_PEDIDO;FORNECEDOR_CNPJ;FORNECEDOR_RAZAO_SOCIAL;EMISSAO;SITUACAO;MOEDA\n20260088412;12.345.678/0001-90;Distribuidora Horizonte Ltda;15/08/2026;EM ABERTO;BRL\n20260088413;98.765.432/0001-55;Frigorífico Boa Mesa S.A.;01/08/2026;BLOQUEADO;BRL",
+  "itens": "NUMERO_PEDIDO;ITEM;CODIGO_MATERIAL;DESCRICAO;UNIDADE;QTD_PEDIDA;QTD_RECEBIDA;PRECO_UNITARIO\n20260088412;1;MAT-77;Óleo de soja 900ml;UN;1.200,000;400,000;6,49\n20260088412;2;MAT-78;Açúcar refinado 1kg;UN;500,000;0,000;4,15\n20260088413;1;MAT-91;Carne bovina dianteiro kg;KG;2.000,000;0,000;27,90"
+}
+
+---
+
+### 3. CONSULTA: Listar todos os pedidos (Modelo Único)
 GET {{baseUrl}}/orders
 
 ---
 
-### 3. CONSULTA: Filtrar apenas pedidos com saldo pendente
+### 4. CONSULTA: Filtrar por cliente de origem (BETA)
+GET {{baseUrl}}/orders?clientOrigin=BETA
+
+---
+
+### 5. CONSULTA: Filtrar apenas pedidos com saldo pendente
 GET {{baseUrl}}/orders?pending_balance=true
 
 ---
 
-### 4. CONSULTA: Detalhes de um pedido específico
+### 6. CONSULTA: Detalhes de um pedido específico de Alfa
 GET {{baseUrl}}/orders/ALFA-4500001234
+
+---
+
+### 7. CONSULTA: Detalhes de um pedido específico de Beta
+GET {{baseUrl}}/orders/BETA-20260088412

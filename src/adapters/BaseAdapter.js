@@ -35,61 +35,24 @@ class BaseAdapter {
     for (const orderData of normalizedOrders) {
       const { items, ...orderHeader } = orderData;
 
-      const persistedOrder = await prismaClient.$transaction(async (tx) => {
-        // Upsert do cabeçalho do pedido
-        const upsertedOrder = await prismaClient.order.upsert({
-          where: { id: orderHeader.id },
-          create: {
-            ...orderHeader,
-            items: { create: items } // Cria os itens junto com o pedido novo
-          },
-          update: {
-            ...orderHeader,
-            items: {
-              deleteMany: {}, // Apaga os itens antigos
-              create: items   // Recria com os dados atualizados da nova carga
-            }
+      const persistedOrder = await prismaClient.order.upsert({
+        where: { id: orderHeader.id },
+        create: {
+          ...orderHeader,
+          items: { create: items || [] }
+        },
+        update: {
+          ...orderHeader,
+          items: {
+            deleteMany: {},
+            create: items || []
           }
-        });
-
-        // Upsert dos itens do pedido
-        const upsertedItems = [];
-        if (Array.isArray(items)) {
-          for (const item of items) {
-            const upsertedItem = await tx.orderItem.upsert({
-              where: {
-                orderId_lineNumber: {
-                  orderId: orderHeader.id,
-                  lineNumber: item.lineNumber,
-                },
-              },
-              create: {
-                orderId: orderHeader.id,
-                lineNumber: item.lineNumber,
-                materialCode: item.materialCode,
-                description: item.description,
-                unitOfMeasure: item.unitOfMeasure,
-                quantityOrdered: item.quantityOrdered,
-                quantityReceived: item.quantityReceived ?? 0,
-                unitPrice: item.unitPrice,
-              },
-              update: {
-                materialCode: item.materialCode,
-                description: item.description,
-                unitOfMeasure: item.unitOfMeasure,
-                quantityOrdered: item.quantityOrdered,
-                quantityReceived: item.quantityReceived ?? 0,
-                unitPrice: item.unitPrice,
-              },
-            });
-            upsertedItems.push(upsertedItem);
+        },
+        include: {
+          items: {
+            orderBy: { lineNumber: 'asc' }
           }
         }
-
-        return {
-          ...upsertedOrder,
-          items: upsertedItems,
-        };
       });
 
       results.push(persistedOrder);

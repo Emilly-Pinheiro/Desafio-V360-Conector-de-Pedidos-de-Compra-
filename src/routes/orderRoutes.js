@@ -42,11 +42,22 @@ router.post('/ingest/:client', async (req, res) => {
  */
 router.get('/', async (req, res) => {
   try {
-    const { clientOrigin, vendorTaxId, status, pending_balance } = req.query;
+    const { clientOrigin, vendorTaxId, vendor, vendorName, status, pending_balance } = req.query;
 
     const where = {};
     if (clientOrigin) where.clientOrigin = String(clientOrigin).toUpperCase();
-    if (vendorTaxId) where.vendorTaxId = String(vendorTaxId).replace(/\D/g, '');
+
+    // Filtro flexível por fornecedor (aceita CNPJ ou Nome/Razão Social)
+    const rawVendor = vendor || vendorTaxId || vendorName;
+    if (rawVendor) {
+      const cleanTaxId = String(rawVendor).replace(/\D/g, '');
+      if (cleanTaxId.length >= 11) {
+        where.vendorTaxId = cleanTaxId;
+      } else {
+        where.vendorName = { contains: String(rawVendor), mode: 'insensitive' };
+      }
+    }
+
     if (status) where.status = String(status).toUpperCase();
 
     // Filtro para pedidos com saldo pendente a receber
