@@ -266,8 +266,7 @@ Permite listar pedidos com suporte a múltiplos filtros combinados na *query str
           "quantityOrdered": "100",
           "quantityReceived": "60",
           "unitPrice": "45.9",
-          "quantityPending": 40,
-          "remainingQuantity": 40
+          "quantityPending": 40
         }
       ]
     }
@@ -279,7 +278,7 @@ Permite listar pedidos com suporte a múltiplos filtros combinados na *query str
 
 ### 3. Detalhes e Saldo do Pedido: `GET /api/orders/:id`
 
-Recupera um pedido específico pelo identificador unificado em uma única consulta ao banco (`prisma.order.findUnique()` com `include: { items: true }`), calculando em tempo de resposta o saldo pendente de cada item (`quantityPending` e `remainingQuantity`).
+Recupera um pedido específico pelo identificador unificado em uma única consulta ao banco (`prisma.order.findUnique()` com `include: { items: true }`), calculando em tempo de resposta o saldo pendente de cada item (`quantityPending`).
 
 **Exemplo:** `GET /api/orders/ALFA-4500001234`
 
@@ -513,20 +512,26 @@ A API estará disponível em `http://localhost:3000`. O endpoint de verificaçã
 
 ## Executando os Testes da API
 
-O arquivo [`api_tests.http`](file:///c:/Users/emill/OneDrive/Documents/Desafio-V360-Conector-de-Pedidos-de-Compra-/api_tests.http) contém todos os cenários de teste documentados e prontos para execução sequencial:
+O arquivo [`api_tests.http`] contém todos os cenários de teste documentados e prontos para execução sequencial (compatível com REST Client do VS Code / Antigravity e Insomnia):
 
 1. **Ingestão Alfa:** Cadastro de pedidos e itens aninhados.
 2. **Ingestão Beta:** Carga e cruzamento de `cabecalho.csv` e `itens.csv`.
-3. **Listagem Geral:** Visualização de todos os pedidos no Modelo Único.
-4. **Filtro por Cliente de Origem:** `clientOrigin=BETA`.
-5. **Filtro de Saldo Pendente:** `pending_balance=true`.
-6. **Consulta de Pedido Específico:** `ALFA-4500001234` e `BETA-20260088412`.
-7. **Conferência Conforme (APROVADA):** Nota dentro do saldo e preço exato.
-8. **Conferência com Saldo Excedido (REJEITADA):** Erro `QUANTITY_EXCEEDED`.
-9. **Conferência com Divergência de Preço (REJEITADA):** Erro `PRICE_DIVERGENCE`.
-10. **Conferência em Pedido Bloqueado (REJEITADA):** Erro `ORDER_BLOCKED`.
-11. **Auditoria de Conferências:** `GET /api/invoice/logs`.
-12. **Dashboards e Estatísticas:** `GET /api/reports`.
+3. **Ingestão Gama:** Carga flat por item com fator de conversão e timestamps Unix.
+4. **Listagem Geral:** Visualização de todos os pedidos no Modelo Único.
+5. **Filtro por Cliente de Origem:** `clientOrigin=GAMA`.
+6. **Filtro de Saldo Pendente:** `pending_balance=true`.
+7. **Filtro de Pedidos Abertos:** `status=OPEN`.
+8. **Filtro de Pedidos Fechados:** `status=CLOSED`.
+9. **Filtro de Pedidos Bloqueados:** `status=BLOCKED`.
+10. **Consulta de Pedido Específico:** `ALFA-4500001234` e `BETA-20260088412`.
+11. **Conferência Conforme (APROVADA):** Nota dentro do saldo e preço exato.
+12. **Conferência com Saldo Excedido (REJEITADA):** Erro `QUANTITY_EXCEEDED`.
+13. **Conferência com Divergência de Preço (REJEITADA):** Erro `PRICE_DIVERGENCE`.
+14. **Conferência em Pedido Bloqueado (REJEITADA):** Erro `ORDER_BLOCKED`.
+15. **Conferência Conforme Gama (APROVADA):** `GL-778` cobra 10 un de `TRP-01`.
+16. **Conferência Gama Encerrado (REJEITADA):** Erro `ORDER_CLOSED`.
+17. **Auditoria de Conferências:** `GET /api/invoice/logs`.
+18. **Dashboards e Estatísticas:** `GET /api/reports`.
 
 ---
 
@@ -545,7 +550,7 @@ O arquivo [`api_tests.http`](file:///c:/Users/emill/OneDrive/Documents/Desafio-V
    - Herdando da abstração `BaseAdapter`.
    - **Agrupamento relacional em memória:** Agrupa as linhas soltas pela chave `"ped"`, construindo o cabeçalho e aninhando os itens de forma idempotente.
    - **Tratamento de Dados na Ingestão:** Converte timestamps Unix para objeto `Date`, centavos para decimais em Reais, e normaliza a situação numérica para o vocabulário canônico (`OPEN`, `CLOSED`, `BLOCKED`).
-   - **Aplicação do `fator_conv` na borda:** Transforma quantidades em caixas para unidades canônicas ($\text{quantidade} \times \text{fator\_conv}$) e decompõe o preço unitário por unidade ($\frac{\text{preço da caixa}}{\text{fator\_conv}}$). Dessa forma, a base de dados armazena os dados já prontos para a conciliação.
+   - **Aplicação do `fator_conv` na borda:** Transforma quantidades em caixas para unidades canônicas (`quantidade * fator_conv`) e decompõe o preço unitário por unidade (`preço da caixa / fator_conv`). Dessa forma, a base de dados armazena os dados já prontos para a conciliação.
 2. **Novos cenários de teste:** Adicionadas requisições de ingestão e conferência de notas fiscais do Gama em [`api_tests.http`]
 
 ### O que EXIGIU MEXER no que já existia:

@@ -96,7 +96,6 @@ router.get('/', async (req, res) => {
         return {
           ...item,
           quantityPending: remaining,
-          remainingQuantity: remaining,
         };
       }),
     }));
@@ -140,7 +139,6 @@ router.get('/:id', async (req, res) => {
         return {
           ...item,
           quantityPending: remaining,
-          remainingQuantity: remaining,
         };
       }),
     };

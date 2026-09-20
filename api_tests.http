@@ -117,15 +117,27 @@ GET {{baseUrl}}/orders?clientOrigin=GAMA
 GET {{baseUrl}}/orders?pending_balance=true
 
 
-### 7. CONSULTA: Detalhes de um pedido específico de Alfa
+### 7. CONSULTA: Filtrar pedidos com status ABERTO (status=OPEN)
+GET {{baseUrl}}/orders?status=OPEN
+
+
+### 8. CONSULTA: Filtrar pedidos com status FECHADO (status=CLOSED)
+GET {{baseUrl}}/orders?status=CLOSED
+
+
+### 9. CONSULTA: Filtrar pedidos com status BLOQUEADO (status=BLOCKED)
+GET {{baseUrl}}/orders?status=BLOCKED
+
+
+### 10. CONSULTA: Detalhes de um pedido específico de Alfa
 GET {{baseUrl}}/orders/ALFA-4500001234
 
 
-### 8. CONSULTA: Detalhes de um pedido específico de Beta
+### 11. CONSULTA: Detalhes de um pedido específico de Beta
 GET {{baseUrl}}/orders/BETA-20260088412
 
 
-### 9. CONFERÊNCIA: Nota Fiscal Conforme (APROVADA)
+### 12. CONFERÊNCIA: Nota Fiscal Conforme (APROVADA)
 # Saldo disponível de MAT-1001 é 40 (100 - 60). Nota cobra 10 un a R$ 45.90 = R$ 459.00
 POST {{baseUrl}}/invoice/validate
 Content-Type: application/json
@@ -143,7 +155,7 @@ Content-Type: application/json
   ]
 }
 
-### 10. CONFERÊNCIA: Nota Fiscal com Saldo Excedido (REJEITADA - QUANTITY_EXCEEDED)
+### 13. CONFERÊNCIA: Nota Fiscal com Saldo Excedido (REJEITADA - QUANTITY_EXCEEDED)
 # Saldo disponível é 40, nota tenta faturar 50 unidades
 POST {{baseUrl}}/invoice/validate
 Content-Type: application/json
@@ -162,7 +174,7 @@ Content-Type: application/json
 }
 
 
-### 11. CONFERÊNCIA: Nota Fiscal com Divergência de Preço além de R$ 0,05 (REJEITADA - PRICE_DIVERGENCE)
+### 14. CONFERÊNCIA: Nota Fiscal com Divergência de Preço além de R$ 0,05 (REJEITADA - PRICE_DIVERGENCE)
 # 10 un de MAT-1001 deveriam custar R$ 459.00, nota cobra R$ 500.00
 POST {{baseUrl}}/invoice/validate
 Content-Type: application/json
@@ -181,7 +193,7 @@ Content-Type: application/json
 }
 
 
-### 12. CONFERÊNCIA: Nota Fiscal para Pedido Bloqueado (REJEITADA - ORDER_BLOCKED)
+### 15. CONFERÊNCIA: Nota Fiscal para Pedido Bloqueado (REJEITADA - ORDER_BLOCKED)
 POST {{baseUrl}}/invoice/validate
 Content-Type: application/json
 
@@ -199,7 +211,7 @@ Content-Type: application/json
 }
 
 
-### 13. CONFERÊNCIA: Cliente Gama Conforme (APROVADA - GL-778 cobra 10 un de TRP-01 a R$ 100,00)
+### 16. CONFERÊNCIA: Cliente Gama Conforme (APROVADA - GL-778 cobra 10 un de TRP-01 a R$ 100,00)
 # Saldo disponível é 96 un (120 - 24). Nota fiscal cobra 10 un a R$ 100.00 = R$ 1.000,00
 POST {{baseUrl}}/invoice/validate
 Content-Type: application/json
@@ -218,7 +230,7 @@ Content-Type: application/json
 }
 
 
-### 14. CONFERÊNCIA: Cliente Gama Pedido Encerrado (REJEITADA - ORDER_CLOSED)
+### 17. CONFERÊNCIA: Cliente Gama Pedido Encerrado (REJEITADA - ORDER_CLOSED)
 POST {{baseUrl}}/invoice/validate
 Content-Type: application/json
 
@@ -236,8 +248,8 @@ Content-Type: application/json
 }
 
 
-### 15. RELATÓRIO: Listar logs de conferências realizadas
+### 18. RELATÓRIO: Listar logs de conferências realizadas
 GET {{baseUrl}}/invoice/logs
 
-### 16. DASHBOARD & ESTATÍSTICAS: Relatório de volumetria e ranking de divergências (com groupBy)
+### 19. DASHBOARD & ESTATÍSTICAS: Relatório de volumetria e ranking de divergências (com groupBy)
 GET {{baseUrl}}/reports
