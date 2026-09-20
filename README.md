@@ -4,6 +4,9 @@ Este repositório contém a solução do desafio técnico da **V360** para a pos
 
 A missão é construir uma camada intermediária resiliente (API REST) capaz de ingerir pedidos de compra de diferentes clientes e sistemas corporativos (cada um com formatos, convenções, nomenclaturas e regras distintas), normalizá-los para um **Modelo Único** e confiável, realizar a **conferência automatizada de notas fiscais** e fornecer **dashboards e relatórios analíticos** de volumetria e divergências.
 
+## Demonstração da API
+Assista ao vídeo demonstrando o fluxo completo de ingestão e o motor de validação de notas fiscais funcionando [aqui](https://drive.google.com/file/d/1cTSSP0FkDmfcGQ-_jZEZ5AEAmN6qz1x-/view?usp=drive_link)
+
 ---
 
 ## Índice
