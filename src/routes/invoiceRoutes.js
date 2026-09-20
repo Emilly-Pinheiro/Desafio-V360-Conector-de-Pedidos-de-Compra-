@@ -57,4 +57,21 @@ router.get('/logs', async (req, res) => {
   }
 });
 
+/**
+ * GET /invoice/reports
+ * Dashboards e Estatísticas da volumetria de conferência e ranking de divergências.
+ */
+router.get('/reports', async (req, res) => {
+  try {
+    const reports = await invoiceService.getReports();
+    return res.status(200).json(reports);
+  } catch (error) {
+    return res.status(500).json({
+      error: 'REPORT_ERROR',
+      message: error.message,
+    });
+  }
+});
+
 module.exports = router;
+

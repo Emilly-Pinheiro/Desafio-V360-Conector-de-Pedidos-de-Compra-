@@ -147,3 +147,7 @@ Content-Type: application/json
 
 ### 12. RELATÓRIO: Listar logs de conferências realizadas
 GET {{baseUrl}}/invoice/logs
+
+
+### 13. DASHBOARD & ESTATÍSTICAS: Relatório de volumetria e ranking de divergências (com groupBy)
+GET {{baseUrl}}/reports

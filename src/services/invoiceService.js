@@ -135,7 +135,7 @@ class InvoiceService {
     // Determina o status final da conferência
     const isValid = divergences.length === 0;
     const status = isValid ? 'APROVADA' : 'REJEITADA';
-    const divergenceReason = divergences.length > 0 ? divergences.map((d) => d.error).join(', ') : null;
+    const divergenceReason = divergences.length > 0 ? divergences[0].error : null;
 
     // Persistência do resultado na tabela conferencias_log
     const log = await prisma.conferenciaLog.create({
@@ -156,6 +156,72 @@ class InvoiceService {
       logId: log.id,
       checkedAt: log.createdAt,
       divergences,
+    };
+  }
+
+  /**
+   * Gera relatório de dashboards e estatísticas utilizando agregações nativas com groupBy()
+   * Otimização: processamento agregado na base de dados para minimizar consumo de memória.
+   * @returns {Promise<object>}
+   */
+  async getReports() {
+    // 1. Agregação da volumetria total (aprovadas vs rejeitadas) na camada de dados
+    const statusCounts = await prisma.conferenciaLog.groupBy({
+      by: ['status'],
+      _count: {
+        status: true,
+      },
+    });
+
+    let aprovadas = 0;
+    let rejeitadas = 0;
+
+    for (const item of statusCounts) {
+      if (item.status === 'APROVADA') {
+        aprovadas = item._count.status;
+      } else if (item.status === 'REJEITADA') {
+        rejeitadas = item._count.status;
+      }
+    }
+
+    const total = aprovadas + rejeitadas;
+    const taxaAprovacao = total > 0 ? Number(((aprovadas / total) * 100).toFixed(2)) : 0;
+    const taxaRejeicao = total > 0 ? Number(((rejeitadas / total) * 100).toFixed(2)) : 0;
+
+    // 2. Ranking ordenado com os motivos mais frequentes de divergência
+    const divergenceCounts = await prisma.conferenciaLog.groupBy({
+      by: ['divergenceReason'],
+      where: {
+        status: 'REJEITADA',
+        divergenceReason: { not: null },
+      },
+      _count: {
+        divergenceReason: true,
+      },
+      orderBy: {
+        _count: {
+          divergenceReason: 'desc',
+        },
+      },
+    });
+
+    const rankingDivergencias = divergenceCounts.map((item, index) => ({
+      posicao: index + 1,
+      motivo: item.divergenceReason,
+      quantidade: item._count.divergenceReason,
+      percentual:
+        rejeitadas > 0 ? Number(((item._count.divergenceReason / rejeitadas) * 100).toFixed(2)) : 0,
+    }));
+
+    return {
+      volumetria: {
+        total,
+        aprovadas,
+        rejeitadas,
+        taxaAprovacao,
+        taxaRejeicao,
+      },
+      rankingDivergencias,
     };
   }
 }

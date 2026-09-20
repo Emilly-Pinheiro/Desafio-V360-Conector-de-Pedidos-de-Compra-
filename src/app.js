@@ -42,4 +42,8 @@ app.use('/api/orders', orderRoutes);
 const invoiceRoutes = require('./routes/invoiceRoutes');
 app.use('/api/invoice', invoiceRoutes);
 
+// Rotas de Relatórios, Dashboards e Estatísticas
+const reportRoutes = require('./routes/reportRoutes');
+app.use('/api/reports', reportRoutes);
+
 module.exports = app;
